@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pruebatyba/domain/models/university.dart';
 import 'package:pruebatyba/domain/repositories/i_university_repository.dart';
 import 'package:pruebatyba/presentation/blocs/university_list_bloc.dart';
+import 'package:pruebatyba/presentation/pages/university_detail_page.dart';
 import 'package:pruebatyba/presentation/pages/university_list_page.dart';
 
 class FakeUniversityRepository implements IUniversityRepository {
@@ -30,20 +31,24 @@ Widget buildTestableWidget(IUniversityRepository repository) {
   );
 }
 
+University buildUniversity() {
+  return University(
+    alphaTwoCode: 'CO',
+    domains: const ['uni.edu.co'],
+    country: 'Colombia',
+    webPages: const ['https://uni.edu.co'],
+    name: 'Universidad TYBA',
+  );
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   testWidgets('shows loading then universities when fetch succeeds', (
     WidgetTester tester,
   ) async {
     final repository = FakeUniversityRepository(
-      response: [
-        University(
-          alphaTwoCode: 'CO',
-          domains: const ['uni.edu.co'],
-          country: 'Colombia',
-          webPages: const ['https://uni.edu.co'],
-          name: 'Universidad TYBA',
-        ),
-      ],
+      response: [buildUniversity()],
     );
 
     await tester.pumpWidget(buildTestableWidget(repository));
@@ -74,5 +79,63 @@ void main() {
 
     expect(find.textContaining('Error:'), findsOneWidget);
     expect(find.widgetWithText(ElevatedButton, 'Retry'), findsOneWidget);
+  });
+
+  testWidgets('shows image source options in university detail', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UniversityDetailPage(university: buildUniversity()),
+      ),
+    );
+
+    expect(find.text('No image selected'), findsOneWidget);
+
+    await tester.tap(find.text('Subir imagen'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Elegir de galeria'), findsOneWidget);
+    expect(find.text('Tomar foto'), findsOneWidget);
+  });
+
+  testWidgets('saves student info without image change in university detail', (
+    WidgetTester tester,
+  ) async {
+    University? updatedUniversity;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    updatedUniversity = await Navigator.of(context).push<University>(
+                      MaterialPageRoute(
+                        builder: (_) => UniversityDetailPage(university: buildUniversity()),
+                      ),
+                    );
+                  },
+                  child: const Text('Open detail'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open detail'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField), '8000');
+    await tester.tap(find.widgetWithText(FilledButton, 'Guardar cambios'));
+    await tester.pumpAndSettle();
+
+    expect(updatedUniversity, isNotNull);
+    expect(updatedUniversity!.numberOfStudents, 8000);
+    expect(updatedUniversity!.imagePath, isNull);
   });
 }
