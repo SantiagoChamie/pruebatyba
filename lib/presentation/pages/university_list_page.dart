@@ -7,6 +7,7 @@ import "../../domain/models/university.dart";
 import "university_detail_page.dart";
 import "../widgets/university_card.dart";
 import "../widgets/university_grid_item.dart";
+import 'package:flutter_svg/flutter_svg.dart';
 
 class UniversityListPage extends StatefulWidget {
   const UniversityListPage({Key? key}) : super(key: key);
@@ -69,7 +70,11 @@ class _UniversityListPageState extends State<UniversityListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(""),
+        title: SvgPicture.asset(
+          'assets/Light.svg',
+          height: 30,
+        ),
+        centerTitle: true,
         actions: [
           BlocBuilder<UniversityListBloc, UniversityState>(
             builder: (context, state) {
