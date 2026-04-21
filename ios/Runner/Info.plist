@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Esta app necesita acceso a la camara para tomar fotos de la universidad.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Esta app necesita acceso a tu galeria para seleccionar imagenes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Esta app puede guardar imagenes editadas en tu galeria.</string>
 </dict>
 </plist>

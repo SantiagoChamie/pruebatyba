@@ -1,4 +1,5 @@
 import "dart:io";
+import "package:file_picker/file_picker.dart";
 import "package:flutter/material.dart";
 import "package:image_picker/image_picker.dart";
 import "../../domain/models/university.dart";
@@ -6,8 +7,7 @@ import "../../domain/models/university.dart";
 class UniversityDetailPage extends StatefulWidget {
   final University university;
 
-  const UniversityDetailPage({Key? key, required this.university})
-    : super(key: key);
+  const UniversityDetailPage({super.key, required this.university});
 
   @override
   State<UniversityDetailPage> createState() => _UniversityDetailPageState();
@@ -36,6 +36,11 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    if (Platform.isIOS && source == ImageSource.gallery) {
+      await _pickImageFromIosGallery();
+      return;
+    }
+
     final image = await _imagePicker.pickImage(
       source: source,
       imageQuality: 80,
@@ -44,6 +49,18 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
 
     setState(() {
       _imagePath = image.path;
+    });
+  }
+
+  Future<void> _pickImageFromIosGallery() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+    if (result == null || result.files.single.path == null) return;
+
+    setState(() {
+      _imagePath = result.files.single.path;
     });
   }
 
