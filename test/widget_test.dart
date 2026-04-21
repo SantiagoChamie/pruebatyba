@@ -1,30 +1,78 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pruebatyba/domain/models/university.dart';
+import 'package:pruebatyba/domain/repositories/i_university_repository.dart';
+import 'package:pruebatyba/presentation/blocs/university_list_bloc.dart';
+import 'package:pruebatyba/presentation/pages/university_list_page.dart';
 
-import 'package:pruebatyba/main.dart';
+class FakeUniversityRepository implements IUniversityRepository {
+  FakeUniversityRepository({required this.response, this.shouldThrow = false});
+
+  final List<University> response;
+  final bool shouldThrow;
+
+  @override
+  Future<List<University>> getUniversities() async {
+    if (shouldThrow) {
+      throw Exception('Network error');
+    }
+    return response;
+  }
+}
+
+Widget buildTestableWidget(IUniversityRepository repository) {
+  return MaterialApp(
+    home: BlocProvider(
+      create: (_) => UniversityListBloc(repository: repository),
+      child: const UniversityListPage(),
+    ),
+  );
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('shows loading then universities when fetch succeeds', (
+    WidgetTester tester,
+  ) async {
+    final repository = FakeUniversityRepository(
+      response: [
+        University(
+          alphaTwoCode: 'CO',
+          domains: const ['uni.edu.co'],
+          country: 'Colombia',
+          webPages: const ['https://uni.edu.co'],
+          name: 'Universidad TYBA',
+        ),
+      ],
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(buildTestableWidget(repository));
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.text('Universidad TYBA'), findsOneWidget);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('shows empty message when repository returns no universities', (
+    WidgetTester tester,
+  ) async {
+    final repository = FakeUniversityRepository(response: const []);
+
+    await tester.pumpWidget(buildTestableWidget(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No universities found'), findsOneWidget);
+  });
+
+  testWidgets('shows retry action when fetch fails', (WidgetTester tester) async {
+    final repository = FakeUniversityRepository(
+      response: const [],
+      shouldThrow: true,
+    );
+
+    await tester.pumpWidget(buildTestableWidget(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Error:'), findsOneWidget);
+    expect(find.widgetWithText(ElevatedButton, 'Retry'), findsOneWidget);
   });
 }
